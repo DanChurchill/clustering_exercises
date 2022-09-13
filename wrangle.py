@@ -77,8 +77,9 @@ def get_zillow():
 
 def single_family(df):
     df=df[df.propertylandusedesc == 'Single Family Residential']
-    df=df[df.unitcnt <= 1]
+    df=df[~df['unitcnt'].isin([0,2,3])]
     df=df[df.bedrooms != 0]
+    return df
 
 def handle_missing_values(df, prop_required_column=.5, prop_required_row=.75):
     threshold = int(round(prop_required_column * len(df.index), 0))
@@ -126,11 +127,14 @@ def wrangle_zillow():
     summarize(df)
 
     # show nulls
-    nulls_by_col(df)
-    nulls_by_row(df)
+    print(nulls_by_col(df))
+    print('-----------------')
+    print(nulls_by_row(df))
 
     # handle nulls
-    df = handle_missing_values(df, prop_required_column=.5, prop_required_row=.75)
+    # df = handle_missing_values(df, prop_required_column=.5, prop_required_row=.75)
+
+    return df
 
     
 
