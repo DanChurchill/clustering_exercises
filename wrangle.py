@@ -74,3 +74,64 @@ def get_zillow():
     # Write that dataframe to disk for later. This cached file will prevent repeated large queries to the database server.
     df.to_csv(filename, index=False)
     return df
+
+def single_family(df):
+    df=df[df.propertylandusedesc == 'Single Family Residential']
+    df=df[df.unitcnt <= 1]
+    df=df[df.bedrooms != 0]
+
+def handle_missing_values(df, prop_required_column=.5, prop_required_row=.75):
+    threshold = int(round(prop_required_column * len(df.index), 0))
+    df = df.dropna(axis=1, thresh = threshold)
+    threshold = int(round(prop_required_row * len(df.columns), 0))
+    df = df.dropna(axis=0, thresh = threshold)
+    return df
+
+def nulls_by_col(df):
+    num_missing = df.isnull().sum()
+    prcnt_miss = num_missing / df.shape[0] * 100
+    
+    cols_missing = pd.DataFrame({'num_rows_missing' : num_missing,
+                                 'percent_rows_missing' : prcnt_miss})
+    return cols_missing
+
+def nulls_by_row(df):
+    num_missing = df.isnull().sum(axis=1)
+    prcnt_miss = num_missing / df.shape[1] * 100
+    
+    rows_missing = pd.DataFrame({'num_cols_missing': num_missing, 'percent_cols_missing' : prcnt_miss})
+    rows_missing = rows_missing.reset_index().groupby(['num_cols_missing',
+                'percent_cols_missing']).count().reset_index().rename(columns={'index' : 'count'})
+    return rows_missing
+
+def summarize(df):
+    print('DataFrame head: \n')
+    print(df.head(3))
+    print('--------------')
+    print('Shape:   ', df.shape)
+    print('---------------')
+    print('Info:    \n')
+    df.info()
+    print('---------------')
+    print(df.describe())
+
+def wrangle_zillow():
+    # get data
+    df=get_zillow()
+
+    # filter for single family
+    df=single_family(df)
+
+    # summarize
+    summarize(df)
+
+    # show nulls
+    nulls_by_col(df)
+    nulls_by_row(df)
+
+    # handle nulls
+    df = handle_missing_values(df, prop_required_column=.5, prop_required_row=.75)
+
+    
+
+
