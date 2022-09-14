@@ -1,7 +1,9 @@
 import os
+from xml.etree.ElementPath import prepare_parent
 import pandas as pd
 import numpy as np
 import env
+from sklearn.model_selection import train_test_split
 
 def get_connection(db, user=env.user, host=env.host, password=env.password):
     '''
@@ -126,16 +128,67 @@ def wrangle_zillow():
     # summarize
     summarize(df)
 
-    # show nulls
-    print(nulls_by_col(df))
-    print('-----------------')
-    print(nulls_by_row(df))
+    # # show nulls
+    # print(nulls_by_col(df))
+    # print('-----------------')
+    # print(nulls_by_row(df))
 
     # handle nulls
-    # df = handle_missing_values(df, prop_required_column=.5, prop_required_row=.75)
+    df = handle_missing_values(df, prop_required_column=.5, prop_required_row=.75)
 
-    return df
+    df = remove_outliers(df)
 
     
+    
+    return df
 
+def my_split(df):
+    '''
+    Separates a dataframe into train, validate, and test datasets
 
+    Keyword arguments:
+    df: a dataframe containing multiple rows
+    
+
+    Returns:
+    three dataframes who's length is 60%, 20%, and 20% of the length of the original dataframe       
+    '''
+
+    # separate into 80% train/validate and test data
+    train_validate, test = train_test_split(df, test_size=.2, random_state=333)
+
+    # further separate the train/validate data into train and validate
+    train, validate = train_test_split(train_validate, 
+                                        test_size=.25, 
+                                        random_state=333)
+
+    return train, validate, test
+
+# handle outliers
+def remove_outliers(df):
+    ''' remove outliers from a list of columns in a dataframe 
+        accepts a dataframe and a list of columns from which to remove outliers
+        returns a dataframe with outliers removed
+    '''
+    col_list = [ 'bathrooms', 'bedrooms', 'calculatedbathnbr',
+       'calculatedfinishedsquarefeet', 'finishedsquarefeet12', 'fips',
+       'fullbathcnt', 'lotsize',
+       
+       'regionidcity', 'regionidcounty', 'regionidzip', 'roomcnt', 'yearbuilt',
+       'structuretaxvaluedollarcnt', 'tax_value', 
+       'landtaxvaluedollarcnt', 'taxamount', 'censustractandblock', 'logerror',
+       
+       'county']
+    
+    for col in col_list:
+
+        q1, q3 = df[col].quantile([.25, .75]) # get range
+        
+        iqr = q3 - q1   # calculate interquartile range
+        
+        upper_bound = q3 + 1.5 * iqr   # get upper bound
+        lower_bound = q1 - 1.5 * iqr   # get lower bound
+
+        df = df[(df[col] > lower_bound) & (df[col] < upper_bound)]
+
+        return df
